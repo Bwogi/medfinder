@@ -145,6 +145,8 @@ export default function ScanToPlacePage() {
   const [qaRoute, setQaRoute] = useState<(typeof ROUTES)[number]>("ORAL");
   const [qaDosageForm, setQaDosageForm] = useState<(typeof DOSAGE_FORMS)[number]>("OTHER");
 
+  const [quickAddNdc, setQuickAddNdc] = useState("");
+
   const [apiQuery, setApiQuery] = useState("");
   const [apiResults, setApiResults] = useState<OpenFdaSuggestion[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
@@ -191,6 +193,7 @@ export default function ScanToPlacePage() {
 
   const applySuggestion = (s: OpenFdaSuggestion) => {
     setQuickAddOpen(true);
+    setQuickAddNdc(s.ndc || "");
     setQaGeneric(s.genericName || "");
     setQaBrands(s.brandName || "");
     setQaStrength(s.strength ?? "");
@@ -239,7 +242,11 @@ export default function ScanToPlacePage() {
   };
 
   const submitScan = async (opts?: { quickAdd?: boolean }) => {
-    if (!scan.trim()) return;
+    const scanValue = scan.trim() || quickAddNdc.trim();
+    if (!scanValue) {
+      setStatus({ kind: "error", message: "Scan (or select an NDC) first." });
+      return;
+    }
     if (!locationId) {
       setStatus({ kind: "error", message: "Pick a storage location first." });
       return;
@@ -249,7 +256,7 @@ export default function ScanToPlacePage() {
     setMissing(null);
 
     const payload: ScanPlacePayload = {
-      scan,
+      scan: scanValue,
       storageLocationId: locationId,
       cassetteNumber: cassetteNumber.trim() ? cassetteNumber.trim() : null,
       isPrimary,
@@ -297,6 +304,7 @@ export default function ScanToPlacePage() {
     setScan("");
     setMissing(null);
     setQuickAddOpen(false);
+    setQuickAddNdc("");
 
     setTimeout(() => scanRef.current?.focus(), 50);
   };
@@ -486,6 +494,23 @@ export default function ScanToPlacePage() {
                   </div>
                 )}
 
+                <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                  Placing into: {selectedLocation ? `${selectedLocation.area} · ${selectedLocation.label}` : "(pick a location on the left)"}
+                </div>
+
+                {!missing ? (
+                  <label className="grid gap-1 text-sm">
+                    <div className="font-medium">NDC (from selection)</div>
+                    <Input
+                      value={quickAddNdc}
+                      onChange={(e) => setQuickAddNdc(e.target.value)}
+                      placeholder='e.g. "55710-019-60"'
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                    />
+                  </label>
+                ) : null}
+
                 <label className="grid gap-1 text-sm">
                   <div className="font-medium">Generic name</div>
                   <Input
@@ -563,6 +588,7 @@ export default function ScanToPlacePage() {
                     onClick={() => {
                       setMissing(null);
                       setQuickAddOpen(false);
+                      setQuickAddNdc("");
                       setTimeout(() => scanRef.current?.focus(), 50);
                     }}
                   >
