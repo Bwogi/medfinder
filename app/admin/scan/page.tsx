@@ -233,6 +233,13 @@ export default function ScanToPlacePage() {
       setApiResults(json.results ?? []);
       if ((json.results ?? []).length === 0) {
         setStatus({ kind: "error", message: "No openFDA results" });
+        setQuickAddOpen(true);
+        const looksLikeNdc = q.replace(/\D+/g, "").length >= 9;
+        setQuickAddNdc(looksLikeNdc ? q : "");
+        setTimeout(() => {
+          const el = document.getElementById("qa-generic") as HTMLInputElement | null;
+          el?.focus();
+        }, 50);
       }
     } catch {
       setStatus({ kind: "error", message: "Lookup failed" });
@@ -285,6 +292,7 @@ export default function ScanToPlacePage() {
         const m = json as ScanResultMissing;
         setMissing(m);
         setQuickAddOpen(true);
+        setQuickAddNdc(m.scan);
         setStatus({ kind: "error", message: m.message });
         setQaGeneric(qaGeneric || "");
         setTimeout(() => {
@@ -498,18 +506,16 @@ export default function ScanToPlacePage() {
                   Placing into: {selectedLocation ? `${selectedLocation.area} · ${selectedLocation.label}` : "(pick a location on the left)"}
                 </div>
 
-                {!missing ? (
-                  <label className="grid gap-1 text-sm">
-                    <div className="font-medium">NDC (from selection)</div>
-                    <Input
-                      value={quickAddNdc}
-                      onChange={(e) => setQuickAddNdc(e.target.value)}
-                      placeholder='e.g. "55710-019-60"'
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                    />
-                  </label>
-                ) : null}
+                <label className="grid gap-1 text-sm">
+                  <div className="font-medium">NDC / scan</div>
+                  <Input
+                    value={quickAddNdc}
+                    onChange={(e) => setQuickAddNdc(e.target.value)}
+                    placeholder='e.g. "55710-019-60"'
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                  />
+                </label>
 
                 <label className="grid gap-1 text-sm">
                   <div className="font-medium">Generic name</div>
