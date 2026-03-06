@@ -135,6 +135,7 @@ export default function ScanToPlacePage() {
   );
 
   const [missing, setMissing] = useState<ScanResultMissing | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   const [recentLocations, setRecentLocations] = useState<string[]>([]);
 
@@ -189,6 +190,7 @@ export default function ScanToPlacePage() {
   };
 
   const applySuggestion = (s: OpenFdaSuggestion) => {
+    setQuickAddOpen(true);
     setQaGeneric(s.genericName || "");
     setQaBrands(s.brandName || "");
     setQaStrength(s.strength ?? "");
@@ -275,6 +277,7 @@ export default function ScanToPlacePage() {
       if ((json as ScanResultMissing).code === "VARIANT_NOT_FOUND") {
         const m = json as ScanResultMissing;
         setMissing(m);
+        setQuickAddOpen(true);
         setStatus({ kind: "error", message: m.message });
         setQaGeneric(qaGeneric || "");
         setTimeout(() => {
@@ -293,6 +296,7 @@ export default function ScanToPlacePage() {
     setStatus({ kind: "ok", message: `Saved to ${json.placement.storageLocation.label}` });
     setScan("");
     setMissing(null);
+    setQuickAddOpen(false);
 
     setTimeout(() => scanRef.current?.focus(), 50);
   };
@@ -432,44 +436,55 @@ export default function ScanToPlacePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {missing ? (
+            {missing || quickAddOpen ? (
               <div className="grid gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="muted">Not found</Badge>
-                  <div className="text-xs text-zinc-600 dark:text-zinc-400">Scan: {missing.scan}</div>
-                </div>
-
-                <div className="text-xs text-zinc-600 dark:text-zinc-400">
-                  Candidates: {missing.ndcCandidates.slice(0, 5).join(", ")}
-                </div>
-
-                {(missing.suggestions?.length ?? 0) > 0 ? (
-                  <div className="grid gap-2">
-                    <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                      openFDA suggestions
+                {missing ? (
+                  <>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="muted">Not found</Badge>
+                      <div className="text-xs text-zinc-600 dark:text-zinc-400">Scan: {missing.scan}</div>
                     </div>
-                    <div className="grid gap-2">
-                      {missing.suggestions!.slice(0, 5).map((s) => (
-                        <button
-                          key={`${s.ndc}-${s.genericName}-${s.brandName}`}
-                          type="button"
-                          className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-left text-sm shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
-                          onClick={() => applySuggestion(s)}
-                        >
-                          <div className="font-semibold text-zinc-900 dark:text-zinc-50">
-                            {s.genericName || s.brandName || "Unknown"}
-                          </div>
-                          <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                            NDC {s.ndc}
-                            {s.strength ? ` · ${s.strength}` : ""}
-                            {s.dosageForm ? ` · ${s.dosageForm}` : ""}
-                            {s.route ? ` · ${s.route}` : ""}
-                          </div>
-                        </button>
-                      ))}
+
+                    <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                      Candidates: {missing.ndcCandidates.slice(0, 5).join(", ")}
+                    </div>
+
+                    {(missing.suggestions?.length ?? 0) > 0 ? (
+                      <div className="grid gap-2">
+                        <div className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                          openFDA suggestions
+                        </div>
+                        <div className="grid gap-2">
+                          {missing.suggestions!.slice(0, 5).map((s) => (
+                            <button
+                              key={`${s.ndc}-${s.genericName}-${s.brandName}`}
+                              type="button"
+                              className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-left text-sm shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                              onClick={() => applySuggestion(s)}
+                            >
+                              <div className="font-semibold text-zinc-900 dark:text-zinc-50">
+                                {s.genericName || s.brandName || "Unknown"}
+                              </div>
+                              <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                                NDC {s.ndc}
+                                {s.strength ? ` · ${s.strength}` : ""}
+                                {s.dosageForm ? ` · ${s.dosageForm}` : ""}
+                                {s.route ? ` · ${s.route}` : ""}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="muted">Manual</Badge>
+                    <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                      Fill in details, then Quick add + place.
                     </div>
                   </div>
-                ) : null}
+                )}
 
                 <label className="grid gap-1 text-sm">
                   <div className="font-medium">Generic name</div>
@@ -547,6 +562,7 @@ export default function ScanToPlacePage() {
                     variant="ghost"
                     onClick={() => {
                       setMissing(null);
+                      setQuickAddOpen(false);
                       setTimeout(() => scanRef.current?.focus(), 50);
                     }}
                   >
