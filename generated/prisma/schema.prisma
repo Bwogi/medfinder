@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum StorageLocationKind {
+  DRAWER
+  SHELF
+  BIN
+  FRIDGE_BIN
+  OTHER
+}
+
+enum StorageArea {
+  FRONT_SHELVES
+  BACK_SHELVES
+  FRIDGE
+  FREEZER
+  NARCOTICS
+  OTC
+  WILL_CALL
+  AUTOMATION
+  COMPOUNDING
+  OTHER
+}
+
+enum Route {
+  ORAL
+  TOPICAL
+  OPHTHALMIC
+  OTIC
+  NASAL
+  INHALATION
+  INJECTION
+  RECTAL
+  VAGINAL
+  SUBLINGUAL
+  TRANSDERMAL
+  OTHER
+}
+
+enum DosageForm {
+  TABLET
+  TABLET_ER
+  TABLET_DR
+  CAPSULE
+  CAPSULE_ER
+  ODT
+  ORAL_SOLUTION
+  ORAL_SUSPENSION
+  SYRUP
+  POWDER
+  GRANULES
+  CREAM
+  OINTMENT
+  GEL
+  LOTION
+  PATCH
+  EYE_DROPS
+  EAR_DROPS
+  NASAL_SPRAY
+  INHALER
+  NEB_SOLUTION
+  INJECTION
+  SUPPOSITORY
+  OTHER
+}
+
+model Medication {
+  id          String   @id @default(cuid())
+  genericName String
+  brandNames  String   @default("[]")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  variants ProductVariant[]
+
+  @@index([genericName])
+}
+
+model ProductVariant {
+  id           String     @id @default(cuid())
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  strength   String?
+  route      Route      @default(ORAL)
+  dosageForm DosageForm @default(OTHER)
+  ndc        String?
+
+  locations  Location[]
+  placements VariantPlacement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([medicationId])
+  @@index([dosageForm])
+  @@index([ndc])
+}
+
+model StorageLocation {
+  id        String              @id @default(cuid())
+  kind      StorageLocationKind @default(OTHER)
+  area      StorageArea
+  label     String
+  notes     String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  placements VariantPlacement[]
+
+  @@index([area])
+  @@index([label])
+}
+
+model VariantPlacement {
+  id                String          @id @default(cuid())
+  productVariantId  String
+  productVariant    ProductVariant  @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  storageLocationId String
+  storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id], onDelete: Cascade)
+
+  isPrimary      Boolean  @default(true)
+  cassetteNumber String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([productVariantId])
+  @@index([storageLocationId])
+  @@index([cassetteNumber])
+}
+
+model Location {
+  id               String         @id @default(cuid())
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  area           StorageArea
+  label          String
+  cassetteNumber String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productVariantId])
+  @@index([area])
+  @@index([cassetteNumber])
+}
